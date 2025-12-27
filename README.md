@@ -23,7 +23,7 @@ A caching layer is utilised in order to reduce both API usage and latency on rep
 
 Have [HACS](https://hacs.xyz/) installed, this will allow you to update easily.
 
-* Adding Tools for Assist to HACS can be using this button:
+* Adding Tools for Assist to HACS can be using this button - note, this is a link to the skye-harris version. I have not pushed this to HACS. I didn't want to cause confusion or make anyone think I created this tool. I'm standing on the shoulders of people much greater than I. The rest of this document is from the original repo:
   [![image](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=skye-harris&repository=llm_intents&category=integration)
 
 <br>
