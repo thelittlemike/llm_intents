@@ -22,7 +22,9 @@ You may utilise the Search Services tools to lookup up-to-date information from 
 """.strip()
 
 WEATHER_SERVICES_PROMPT = """
-Use the Weather Services tools to access weather forecast data.
+You MUST use the Weather Services tools for any weather-related question.
+Do NOT rely on prior knowledge or assumptions.
+All temperatures must be reported in Fahrenheit unless explicitly requested otherwise.
 """.strip()
 
 # Brave-specific constants
@@ -57,6 +59,12 @@ CONF_WEATHER_ENABLED = "weather_enabled"
 CONF_DAILY_WEATHER_ENTITY = "weather_daily_entity"
 CONF_HOURLY_WEATHER_ENTITY = "weather_hourly_entity"
 
+# SearXNG-specific constants
+
+CONF_SEARXNG_ENABLED = "searxng_enabled"
+CONF_SEARXNG_URL = "searxng_url"
+CONF_SEARXNG_NUM_RESULTS = "searxng_num_results"
+
 # Service defaults
 
 SERVICE_DEFAULTS = {
@@ -76,4 +84,6 @@ SERVICE_DEFAULTS = {
     CONF_WIKIPEDIA_NUM_RESULTS: 1,
     CONF_DAILY_WEATHER_ENTITY: None,
     CONF_HOURLY_WEATHER_ENTITY: None,
+    CONF_SEARXNG_URL: "",
+    CONF_SEARXNG_NUM_RESULTS: 2,
 }

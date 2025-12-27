@@ -32,6 +32,9 @@ from .const import (
     CONF_GOOGLE_PLACES_RADIUS,
     CONF_GOOGLE_PLACES_RANKING,
     CONF_HOURLY_WEATHER_ENTITY,
+    CONF_SEARXNG_ENABLED,
+    CONF_SEARXNG_NUM_RESULTS,
+    CONF_SEARXNG_URL,
     CONF_WEATHER_ENABLED,
     CONF_WIKIPEDIA_ENABLED,
     CONF_WIKIPEDIA_NUM_RESULTS,
@@ -49,6 +52,7 @@ STEP_BRAVE = "brave"
 STEP_GOOGLE_PLACES = "google_places"
 STEP_WIKIPEDIA = "wikipedia"
 STEP_WEATHER = "weather"
+STEP_SEARXNG = "searxng"
 STEP_INIT = "init"
 STEP_CONFIGURE_SEARCH = "configure"
 STEP_CONFIGURE_WEATHER = "configure_weather"
@@ -60,6 +64,7 @@ def get_step_user_data_schema(hass) -> vol.Schema:
         vol.Optional(CONF_BRAVE_ENABLED, default=False): bool,
         vol.Optional(CONF_GOOGLE_PLACES_ENABLED, default=False): bool,
         vol.Optional(CONF_WIKIPEDIA_ENABLED, default=False): bool,
+        vol.Optional(CONF_SEARXNG_ENABLED, default=False): bool,
         vol.Optional(CONF_WEATHER_ENABLED, default=False): bool,
     }
     return vol.Schema(schema)
@@ -140,6 +145,21 @@ def get_wikipedia_schema(hass) -> vol.Schema:
     )
 
 
+def get_searxng_schema(hass) -> vol.Schema:
+    """Return the static schema for SearXNG service configuration."""
+    return vol.Schema(
+        {
+            vol.Required(
+                CONF_SEARXNG_URL, default=SERVICE_DEFAULTS.get(CONF_SEARXNG_URL, "")
+            ): str,
+            vol.Required(
+                CONF_SEARXNG_NUM_RESULTS,
+                default=SERVICE_DEFAULTS.get(CONF_SEARXNG_NUM_RESULTS),
+            ): vol.All(int, vol.Range(min=1, max=20)),
+        }
+    )
+
+
 def get_weather_schema(hass) -> vol.Schema:
     """Return the static schema for Weather configuration."""
     daily_entities = []
@@ -168,6 +188,7 @@ SEARCH_STEP_ORDER = {
     STEP_BRAVE: [CONF_BRAVE_ENABLED, get_brave_schema],
     STEP_GOOGLE_PLACES: [CONF_GOOGLE_PLACES_ENABLED, get_google_places_schema],
     STEP_WIKIPEDIA: [CONF_WIKIPEDIA_ENABLED, get_wikipedia_schema],
+    STEP_SEARXNG: [CONF_SEARXNG_ENABLED, get_searxng_schema],
 }
 
 WEATHER_STEP_ORDER = {
@@ -293,6 +314,12 @@ class LlmIntentsConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         """Handle Wikipedia configuration step."""
         return await self.handle_step(STEP_WIKIPEDIA, user_input)
 
+    async def async_step_searxng(
+        self, user_input: dict[str, Any] | None = None
+    ) -> config_entries.FlowResult:
+        """Handle SearXNG configuration step."""
+        return await self.handle_step(STEP_SEARXNG, user_input)
+
     async def async_step_weather(
         self, user_input: dict[str, Any] | None = None
     ) -> config_entries.FlowResult:
@@ -355,6 +382,10 @@ class LlmIntentsOptionsFlow(config_entries.OptionsFlowWithReload):
                 vol.Optional(
                     CONF_WIKIPEDIA_ENABLED,
                     default=defaults.get(CONF_WIKIPEDIA_ENABLED, False),
+                ): bool,
+                vol.Optional(
+                    CONF_SEARXNG_ENABLED,
+                    default=defaults.get(CONF_SEARXNG_ENABLED, False),
                 ): bool,
             }
             schema = vol.Schema(schema_dict)
@@ -437,6 +468,8 @@ class LlmIntentsOptionsFlow(config_entries.OptionsFlowWithReload):
             services.append("Google Places")
         if data.get(CONF_WIKIPEDIA_ENABLED):
             services.append("Wikipedia")
+        if data.get(CONF_SEARXNG_ENABLED):
+            services.append("SearXNG")
         if data.get(CONF_WEATHER_ENABLED):
             services.append("Weather")
 
@@ -486,6 +519,12 @@ class LlmIntentsOptionsFlow(config_entries.OptionsFlowWithReload):
     ) -> config_entries.FlowResult:
         """Handle Wikipedia configuration step in options flow."""
         return await self.handle_step(STEP_WIKIPEDIA, user_input)
+
+    async def async_step_searxng(
+        self, user_input: dict[str, Any] | None = None
+    ) -> config_entries.FlowResult:
+        """Handle SearXNG configuration step in options flow."""
+        return await self.handle_step(STEP_SEARXNG, user_input)
 
     async def async_step_weather(
         self, user_input: dict[str, Any] | None = None

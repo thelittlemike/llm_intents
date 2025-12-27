@@ -2,9 +2,11 @@ import logging
 from datetime import datetime, timedelta
 
 import voluptuous as vol
+from homeassistant.const import UnitOfTemperature
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import llm
 from homeassistant.util.json import JsonObjectType
+from homeassistant.util.unit_conversion import TemperatureConverter
 
 from .const import (
     CONF_DAILY_WEATHER_ENTITY,
@@ -44,12 +46,17 @@ class WeatherAttribute:
         self.key: str = key
         self.name: str = name
 
-def _build_attributes(attribute_list: list[WeatherAttribute], weather_data: dict) -> list[str]:
+
+def _build_attributes(
+    attribute_list: list[WeatherAttribute], weather_data: dict
+) -> list[str]:
     output = []
     for attribute in attribute_list:
         if attribute.key in weather_data:
             attr_data = weather_data.get(attribute.key)
-            output.append(f"  {attribute.name}: {attribute.formatter(attr_data) if attribute.formatter else attr_data}")
+            output.append(
+                f"  {attribute.name}: {attribute.formatter(attr_data) if attribute.formatter else attr_data}"
+            )
     return output
 
 
@@ -58,6 +65,11 @@ class WeatherForecastTool(llm.Tool):
 
     name = "GetWeatherForecast"
     description = "Use this tool to retrieve weather forecasts for a particular period. Defaults to the weeks weather if `range` is not specified."
+    response_instruction = """
+Review the forecast and answer the user clearly.
+Temperatures must be reported in Fahrenheit (°F) unless the user explicitly requests Celsius.
+Always include the unit (°F or °C).
+""".strip()
 
     parameters = vol.Schema(
         {
@@ -67,6 +79,10 @@ class WeatherForecastTool(llm.Tool):
             ): str,
         }
     )
+
+    def wrap_response(self, response: dict) -> dict:
+        response["instruction"] = self.response_instruction
+        return response
 
     @staticmethod
     def _find_target_date(date_range: str):
@@ -128,6 +144,21 @@ class WeatherForecastTool(llm.Tool):
 
         return date
 
+    @staticmethod
+    def _to_fahrenheit(hass: HomeAssistant, temp: float | int | None) -> float | None:
+        if temp is None:
+            return None
+
+        # Force Fahrenheit output. If HA is configured for Celsius, convert.
+        if hass.config.units.temperature_unit == UnitOfTemperature.CELSIUS:
+            return TemperatureConverter.convert(
+                float(temp),
+                UnitOfTemperature.CELSIUS,
+                UnitOfTemperature.FAHRENHEIT,
+            )
+
+        return float(temp)
+
     async def _get_daily_forecast(self, hass: HomeAssistant, entity_id: str, date):
         forecast = await hass.services.async_call(
             "weather",
@@ -145,27 +176,38 @@ class WeatherForecastTool(llm.Tool):
 
         daily_attributes = [
             WeatherAttribute(key="condition", name="General Condition", formatter=None),
-            WeatherAttribute(key="precipitation_probability", name="Precipitation", formatter=_friendly_precipitation_chance),
+            WeatherAttribute(
+                key="precipitation_probability",
+                name="Precipitation",
+                formatter=_friendly_precipitation_chance,
+            ),
         ]
 
         output = []
         for day in forecast:
-            temp_low = day.get("templow")
+            temp_low_f = self._to_fahrenheit(hass, day.get("templow"))
+            temp_high_f = self._to_fahrenheit(hass, day.get("temperature"))
+
             temperature = (
-                f"{round(temp_low)} - {round(day['temperature'])}"
-                if temp_low is not None
-                else round(day["temperature"])
+                f"{round(temp_low_f)} - {round(temp_high_f)} °F"
+                if temp_low_f is not None and temp_high_f is not None
+                else f"{round(temp_high_f)} °F"
+                if temp_high_f is not None
+                else "Unavailable"
             )
+
             output.append(
                 "\n".join(
                     [
                         f"- Date: {self._format_date(day['datetime'])}",
                         f"  Temperature: {temperature}",
-                    ] + _build_attributes(daily_attributes, day),
+                    ]
+                    + _build_attributes(daily_attributes, day),
                 )
             )
 
-        return "\n".join(output)
+        response = {"forecast": "\n".join(output)}
+        return self.wrap_response(response)
 
     async def _get_hourly_forecast(self, hass: HomeAssistant, entity_id: str, date):
         forecast = await hass.services.async_call(
@@ -183,21 +225,30 @@ class WeatherForecastTool(llm.Tool):
 
         hourly_attributes = [
             WeatherAttribute(name="General Condition", key="condition", formatter=None),
-            WeatherAttribute(name="Precipitation", key="precipitation_probability", formatter=_friendly_precipitation_chance),
+            WeatherAttribute(
+                name="Precipitation",
+                key="precipitation_probability",
+                formatter=_friendly_precipitation_chance,
+            ),
         ]
 
         output = []
         for hour in forecast:
+            temp_f = self._to_fahrenheit(hass, hour.get("temperature"))
+            temp_str = f"{round(temp_f)} °F" if temp_f is not None else "Unavailable"
+
             output.append(
                 "\n".join(
                     [
                         f"- Time: {self._format_time(hour['datetime'])}",
-                        f"  Temperature: {round(hour['temperature'])}",
-                    ] + _build_attributes(hourly_attributes, hour),
+                        f"  Temperature: {temp_str}",
+                    ]
+                    + _build_attributes(hourly_attributes, hour),
                 )
             )
 
-        return "\n".join(output)
+        response = {"forecast": "\n".join(output)}
+        return self.wrap_response(response)
 
     async def async_call(
         self,
@@ -232,7 +283,9 @@ class WeatherForecastTool(llm.Tool):
                 )
 
             if not forecast:
-                forecast = "No weather forecast available for the selected range"
+                forecast = self.wrap_response(
+                    {"forecast": "No weather forecast available for the selected range"}
+                )
 
             return forecast
         except Exception as e:

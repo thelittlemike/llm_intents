@@ -6,6 +6,7 @@
         "description": "Select the services you want to enable for Tools for Assist.",
         "data": {
           "brave_search_enabled": "Enable Brave Web Search",
+          "searxng_enabled": "Enable SearXNG Web Search",
           "google_places_enabled": "Enable Google Places",
           "wikipedia_enabled": "Enable Wikipedia Search",
           "weather_enabled": "Enable Weather Forecast"
@@ -43,6 +44,14 @@
           "wikipedia_num_results": "Number of Results"
         }
       },
+      "searxng": {
+        "title": "Configure SearXNG Web Search",
+        "description": "Configure SearXNG settings.",
+        "data": {
+          "searxng_url": "SearXNG Base URL",
+          "searxng_num_results": "Number of Results"
+        }
+      },
       "weather": {
         "title": "Configure Weather",
         "description": "Configure Weather sources.",
@@ -72,7 +81,8 @@
         "data": {
           "brave_search_enabled": "Enable Brave Web Search",
           "google_places_enabled": "Enable Google Places",
-          "wikipedia_enabled": "Enable Wikipedia Search"
+          "wikipedia_enabled": "Enable Wikipedia Search",
+          "searxng_enabled": "Enable SearXNG Web Search"
         }
       },
       "configure_weather": {
@@ -112,6 +122,14 @@
         "description": "Configure Wikipedia search settings.",
         "data": {
           "wikipedia_num_results": "Number of Results"
+        }
+      },
+      "searxng": {
+        "title": "Configure SearXNG Web Search",
+        "description": "Configure SearXNG settings.",
+        "data": {
+          "searxng_url": "SearXNG Base URL",
+          "searxng_num_results": "Number of Results"
         }
       },
       "weather": {
