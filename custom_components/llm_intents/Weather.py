@@ -67,8 +67,7 @@ class WeatherForecastTool(llm.Tool):
     description = "Use this tool to retrieve weather forecasts for a particular period. Defaults to the weeks weather if `range` is not specified."
     response_instruction = """
 Review the forecast and answer the user clearly.
-Temperatures must be reported in Fahrenheit (°F) unless the user explicitly requests Celsius.
-Always include the unit (°F or °C).
+Always include the unit (°F or °C) but say the entire unit and not the letter abbreviation.
 """.strip()
 
     parameters = vol.Schema(
