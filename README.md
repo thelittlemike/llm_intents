@@ -1,12 +1,13 @@
 # Tools for Assist _(Custom Integration for Home Assistant)_
 
-Modified from the original to include a local SearXNG metasearch option. Also made some tweaks to the Weather.py file.
+Forked and modified from the original [Tools For Assist](https://github.com/skye-harris/llm_intents) to include a local SearXNG metasearch option. Also made some tweaks to the Weather.py file.
 
 This is a work in progress and may contain bugs. I will always try to update from upstream but wanted something that would add tools not locked behind a paywall or require configuring APIs before you can use them.
 
 Additional tools for LLM-backed Assist for Home Assistant:
 
 * **Brave Web Search**
+* **SearXNG Web Search**
 * **Google Places**
 * **Wikipedia**
 * **Weather Forecast**
